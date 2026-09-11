@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Warrnambool Camera Club member competition photography gallery">
+  <title>Member Photography | Warrnambool Camera Club</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="eyebrow">Warrnambool Camera Club</div>
+      <h1>Member Photography</h1>
+      <p class="intro">Competition photography from our members. Select a photographer to explore their images, then click any photograph for a larger view.</p>
+    </div>
+    <div class="hero-stat" aria-live="polite">
+      <strong id="totalImages">—</strong>
+      <span>competition images</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="tabs" aria-label="Gallery sections">
+    <button class="tab active" id="membersTab" type="button">Member Galleries</button>
+    <button class="tab" id="iotyTab" type="button">Image of the Year</button>
+  </nav>
+
+  <section id="membersSection">
+    <div class="toolbar">
+      <label class="field">
+        <span>Photographer</span>
+        <select id="memberSelect"></select>
+      </label>
+      <label class="field">
+        <span>Year</span>
+        <select id="yearSelect"></select>
+      </label>
+      <label class="field">
+        <span>Month</span>
+        <select id="monthSelect"></select>
+      </label>
+      <label class="field">
+        <span>Set Subject</span>
+        <select id="subjectSelect"></select>
+      </label>
+      <label class="field">
+        <span>Result</span>
+        <select id="resultSelect">
+          <option value="">All results</option>
+          <option value="award">Awards only</option>
+          <option value="Accepted">Accepted only</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="section-heading">
+      <div>
+        <h2 id="galleryTitle">All members</h2>
+        <p id="gallerySummary" class="muted"></p>
+      </div>
+      <button class="secondary" id="clearFilters" type="button">Clear filters</button>
+    </div>
+
+    <div class="gallery" id="gallery" aria-live="polite"></div>
+    <div class="empty" id="emptyState" hidden>No photographs match the selected filters.</div>
+  </section>
+
+  <section id="iotySection" hidden>
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Year-end honours</div>
+        <h2>Image of the Year</h2>
+        <p class="muted">Only year-end placegetters and awards are shown here. Other IOTY entries remain represented by their original competition appearances in the member galleries.</p>
+      </div>
+    </div>
+    <div class="gallery" id="iotyGallery"></div>
+  </section>
+</main>
+
+<div class="lightbox" id="lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Large photograph viewer">
+  <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close">&times;</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous image">&#10094;</button>
+  <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Next image">&#10095;</button>
+  <div class="lightbox-inner">
+    <img id="lightboxImage" src="" alt="">
+    <div class="lightbox-caption">
+      <div class="lightbox-title" id="lightboxTitle"></div>
+      <div id="lightboxMeta"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    Competition images are displayed from the public MyPhotoClub image service. Gallery metadata is maintained automatically from published Warrnambool Camera Club competition results.
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
