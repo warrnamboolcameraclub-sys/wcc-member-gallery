@@ -3,7 +3,7 @@ const state = {
   ioty: [],
   visible: [],
   currentPage: 1,
-  pageSize: 25,
+  pageSize: (window.matchMedia('(max-width: 768px)').matches && new URLSearchParams(location.search).get('embed') !== '1') ? 12 : 25,
   lightboxIndex: 0,
   mode: 'members'
 };
@@ -13,6 +13,8 @@ const embeddedMode = new URLSearchParams(location.search).get('embed') === '1';
 if(embeddedMode){
   document.body.classList.add('embed-mode');
 }
+
+const isMobileStandalone = window.matchMedia('(max-width: 768px)').matches && !embeddedMode;
 
 const $ = id => document.getElementById(id);
 const gallery = $('gallery');
@@ -328,7 +330,27 @@ function galleryActivate(e){
   openLightbox(box.dataset.index,box.dataset.target,box);
 }
 
+function setupMobileFilters(){
+  const toggle = $('filterToggle');
+  const filters = $('galleryFilters');
+  if(!toggle || !filters) return;
+
+  if(!isMobileStandalone){
+    toggle.closest('.mobile-filter-bar').hidden = true;
+    return;
+  }
+
+  filters.classList.add('mobile-collapsed');
+  toggle.addEventListener('click',()=>{
+    const opening = filters.classList.contains('mobile-collapsed');
+    filters.classList.toggle('mobile-collapsed', !opening);
+    toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    toggle.textContent = opening ? 'Hide filters' : 'Filter photographs';
+  });
+}
+
 async function init(){
+  setupMobileFilters();
   try{
     const [photosRes,iotyRes] = await Promise.all([
       fetch('data/photos.json',{cache:'no-store'}),
@@ -356,6 +378,13 @@ $('clearFilters').addEventListener('click',()=>{
   state.currentPage = 1;
   refreshFacetOptions();
   renderMembers();
+  if(isMobileStandalone){
+    const filters = $('galleryFilters');
+    const toggle = $('filterToggle');
+    filters.classList.add('mobile-collapsed');
+    toggle.setAttribute('aria-expanded','false');
+    toggle.textContent = 'Filter photographs';
+  }
 });
 
 $('pagePrev').addEventListener('click',()=>{

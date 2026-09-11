@@ -25,7 +25,11 @@
   </nav>
 
   <section id="membersSection">
-    <div class="toolbar">
+    <div class="mobile-filter-bar">
+      <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false" aria-controls="galleryFilters">Filter photographs</button>
+    </div>
+
+    <div class="toolbar" id="galleryFilters">
       <label class="field">
         <span>Photographer</span>
         <select id="memberSelect"></select>
