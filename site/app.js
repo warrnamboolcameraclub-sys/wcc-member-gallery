@@ -2,9 +2,22 @@ const state = {
   photos: [],
   ioty: [],
   visible: [],
+  visibleLimit: 12,
   lightboxIndex: 0,
   mode: 'members'
 };
+
+const embeddedMode = new URLSearchParams(location.search).get('embed') === '1';
+
+function pageSize(){
+  return 50;
+}
+
+state.visibleLimit = pageSize();
+
+if(embeddedMode){
+  document.body.classList.add('embed-mode');
+}
 
 const $ = id => document.getElementById(id);
 const gallery = $('gallery');
@@ -158,6 +171,7 @@ function refreshFacetOptions(initial=false){
 }
 
 function facetChanged(){
+  state.visibleLimit = pageSize();
   refreshFacetOptions();
   renderMembers();
 }
@@ -194,7 +208,20 @@ function renderMembers(){
     `${shown.length.toLocaleString()} image${shown.length===1?'':'s'}` +
     (!memberSelect.value ? ` from ${memberCount} photographer${memberCount===1?'':'s'}` : '') +
     (active.length ? ` · ${active.join(' · ')}` : '');
-  gallery.innerHTML = shown.map((p,i)=>card(p,i,'members')).join('');
+
+  const displayCount = Math.min(state.visibleLimit, shown.length);
+  gallery.innerHTML = shown.slice(0, displayCount).map((p,i)=>card(p,i,'members')).join('');
+
+  const moreRemaining = shown.length - displayCount;
+  const hasMore = moreRemaining > 0;
+  $('loadMoreWrap').hidden = !hasMore;
+  $('loadMore').hidden = !hasMore;
+  $('loadMoreStatus').textContent =
+    hasMore ? `Showing ${displayCount.toLocaleString()} of ${shown.length.toLocaleString()} images` : '';
+  if(hasMore){
+    $('loadMore').textContent = `Load more (${Math.min(pageSize(), moreRemaining)})`;
+  }
+
   $('emptyState').hidden = shown.length !== 0;
   updateHash();
 }
@@ -279,7 +306,13 @@ subjectSelect.addEventListener('change',facetChanged);
 resultSelect.addEventListener('change',facetChanged);
 $('clearFilters').addEventListener('click',()=>{
   memberSelect.value=''; yearSelect.value=''; monthSelect.value=''; subjectSelect.value=''; resultSelect.value='';
+  state.visibleLimit = pageSize();
   refreshFacetOptions();
+  renderMembers();
+});
+
+$('loadMore').addEventListener('click',()=>{
+  state.visibleLimit += pageSize();
   renderMembers();
 });
 $('membersTab').addEventListener('click',()=>switchTab('members'));

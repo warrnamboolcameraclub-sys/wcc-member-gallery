@@ -65,3 +65,78 @@ footer{margin-top:50px;border-top:1px solid var(--line);padding:25px 0 40px;colo
   .lightbox{padding:8px}.lightbox-inner{padding:7px}.lightbox img{max-width:96vw;max-height:78vh}
   .lightbox-nav{font-size:28px;padding:9px 10px}.lightbox-prev{left:5px}.lightbox-next{right:5px}
 }
+
+
+/* Incremental gallery rendering */
+.load-more-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  padding:28px 0 8px;
+}
+.load-more-status{
+  color:var(--muted);
+  font-size:13px;
+}
+.load-more{
+  min-width:190px;
+  border:1px solid #52718a;
+  background:#172737;
+  color:#f4f7f9;
+  padding:12px 20px;
+  cursor:pointer;
+  font-weight:700;
+}
+.load-more:hover{
+  background:#20384d;
+  border-color:#79a7c9;
+}
+
+/* Zenfolio iframe mode: ?embed=1
+   Keeps the WCC page header/footer outside the iframe and makes the gallery
+   read as native content inside the Zenfolio Custom Page. */
+body.embed-mode{
+  background:var(--bg);
+}
+body.embed-mode .hero{
+  background:var(--bg);
+  border-bottom:1px solid var(--line);
+}
+body.embed-mode .hero-inner{
+  min-height:0;
+  padding:22px 0 18px;
+}
+body.embed-mode .hero .eyebrow,
+body.embed-mode .hero-stat,
+body.embed-mode footer{
+  display:none;
+}
+body.embed-mode h1{
+  font-size:clamp(30px,4vw,42px);
+  margin-bottom:8px;
+  letter-spacing:-.02em;
+}
+body.embed-mode .intro{
+  font-size:15px;
+  line-height:1.5;
+  max-width:900px;
+}
+body.embed-mode .tabs{
+  padding-top:18px;
+}
+body.embed-mode .wrap{
+  width:min(var(--max),calc(100% - 24px));
+}
+
+@media(max-width:520px){
+  .load-more-wrap{padding-top:20px}
+  .load-more{width:100%}
+}
+
+
+/* Ensure the Load More block is genuinely removed when no more images remain.
+   This is required because .load-more-wrap sets display:flex. */
+.load-more-wrap[hidden]{
+  display:none !important;
+}
