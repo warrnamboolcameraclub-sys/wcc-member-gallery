@@ -339,3 +339,17 @@ body.embed-mode .lightbox img{
     max-width:180px;
   }
 }
+
+/* v19 mobile standalone gallery:
+   Phones are sent directly to GitHub Pages rather than the Zenfolio iframe.
+   Remove the large desktop hero entirely on those screens so visitors arrive
+   immediately at the gallery controls and photographs. */
+@media(max-width:768px){
+  body:not(.embed-mode) .hero{
+    display:none;
+  }
+
+  body:not(.embed-mode) .tabs{
+    padding-top:18px;
+  }
+}
