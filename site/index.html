@@ -6,6 +6,58 @@
   <meta name="description" content="Warrnambool Camera Club member competition photography gallery">
   <title>Member Photography | Warrnambool Camera Club</title>
   <link rel="stylesheet" href="styles.css">
+
+<style>
+  /*
+    Large-image attribution overlay.
+    Desktop only: the mobile lightbox remains unchanged.
+  */
+  .lightbox-image-wrap{
+    position:relative;
+    display:inline-block;
+    max-width:100%;
+  }
+
+  .lightbox-image-wrap > #lightboxImage{
+    display:block;
+  }
+
+  .photo-title-overlay,
+  .photo-copyright-overlay{
+    position:absolute;
+    z-index:8;
+    max-width:70%;
+    padding:8px 11px;
+    background:rgba(0,0,0,.58);
+    color:#fff;
+    font-size:14px;
+    line-height:1.25;
+    font-weight:600;
+    letter-spacing:.01em;
+    text-shadow:0 1px 2px rgba(0,0,0,.8);
+    pointer-events:none;
+    box-sizing:border-box;
+  }
+
+  .photo-title-overlay{
+    top:14px;
+    left:14px;
+  }
+
+  .photo-copyright-overlay{
+    right:14px;
+    bottom:14px;
+    text-align:right;
+  }
+
+  @media(max-width:768px){
+    .photo-title-overlay,
+    .photo-copyright-overlay{
+      display:none !important;
+    }
+  }
+</style>
+
 </head>
 <body>
 <div class="mobile-sitebar">
@@ -101,7 +153,13 @@
   <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous image">&#10094;</button>
   <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Next image">&#10095;</button>
   <div class="lightbox-inner">
-    <img id="lightboxImage" src="" alt="">
+    <div class="lightbox-image-wrap">
+      <img id="lightboxImage" src="" alt="">
+
+      <div class="photo-title-overlay" id="photoTitleOverlay" aria-hidden="true"></div>
+      <div class="photo-copyright-overlay" id="photoCopyrightOverlay" aria-hidden="true"></div>
+    </div>
+
     <div class="lightbox-caption">
       <div class="lightbox-title" id="lightboxTitle"></div>
       <div id="lightboxMeta"></div>
@@ -116,5 +174,48 @@
 </footer>
 
 <script src="app.js"></script>
+
+<script>
+(function () {
+  var sourceTitle = document.getElementById('lightboxTitle');
+  var sourceMeta = document.getElementById('lightboxMeta');
+  var titleOverlay = document.getElementById('photoTitleOverlay');
+  var copyrightOverlay = document.getElementById('photoCopyrightOverlay');
+
+  function updatePhotoOverlays() {
+    if (!sourceTitle || !sourceMeta || !titleOverlay || !copyrightOverlay) return;
+
+    var title = (sourceTitle.textContent || '').trim();
+    var meta = (sourceMeta.textContent || '').trim();
+
+    // app.js formats metadata as:
+    // Photographer · Competition · Section · Result
+    var photographer = meta.split('·')[0].trim();
+
+    titleOverlay.textContent = title;
+    copyrightOverlay.textContent = photographer ? '© ' + photographer : '';
+
+    titleOverlay.style.display = title ? '' : 'none';
+    copyrightOverlay.style.display = photographer ? '' : 'none';
+  }
+
+  if (sourceTitle && sourceMeta) {
+    new MutationObserver(updatePhotoOverlays).observe(sourceTitle, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    new MutationObserver(updatePhotoOverlays).observe(sourceMeta, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    updatePhotoOverlays();
+  }
+}());
+</script>
+
 </body>
 </html>
