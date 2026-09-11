@@ -140,3 +140,63 @@ body.embed-mode .wrap{
 .load-more-wrap[hidden]{
   display:none !important;
 }
+
+
+/* Zenfolio iframe lightbox:
+   In embed mode the outer Zenfolio page does the scrolling. A viewport-fixed
+   overlay inside a tall iframe can therefore appear far below the clicked
+   thumbnail. Anchor the overlay to the clicked gallery row instead. */
+body.embed-mode .lightbox{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:auto;
+  width:100%;
+  height:auto;
+  min-height:720px;
+  padding:22px;
+  align-items:center;
+  justify-content:center;
+}
+
+body.embed-mode .lightbox-inner{
+  max-width:calc(100% - 80px);
+  max-height:680px;
+}
+
+body.embed-mode .lightbox img{
+  max-width:calc(100vw - 120px);
+  max-height:580px;
+}
+
+body.embed-mode .lightbox-close,
+body.embed-mode .lightbox-nav{
+  position:absolute;
+}
+
+body.embed-mode .lightbox-close{
+  top:14px;
+  right:20px;
+}
+
+body.embed-mode .lightbox-nav{
+  top:50%;
+}
+
+body.embed-mode .lightbox-prev{left:18px}
+body.embed-mode .lightbox-next{right:18px}
+
+@media(max-width:700px){
+  body.embed-mode .lightbox{
+    min-height:620px;
+    padding:10px;
+  }
+  body.embed-mode .lightbox-inner{
+    max-width:calc(100% - 28px);
+    max-height:590px;
+  }
+  body.embed-mode .lightbox img{
+    max-width:calc(100vw - 48px);
+    max-height:500px;
+  }
+}

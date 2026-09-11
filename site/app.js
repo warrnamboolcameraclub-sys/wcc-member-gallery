@@ -245,7 +245,7 @@ function switchTab(mode){
   $('iotyTab').classList.toggle('active',!members);
 }
 
-function openLightbox(index,target){
+function openLightbox(index,target,anchor=null){
   const list = target==='ioty' ? state.ioty : state.visible;
   if(!list.length) return;
   state.mode = target;
@@ -255,9 +255,15 @@ function openLightbox(index,target){
   $('lightboxImage').alt = `${displayTitle(p.title)} by ${p.member}`;
   $('lightboxTitle').textContent = displayTitle(p.title);
   $('lightboxMeta').textContent = `${p.member} · ${p.competition} · ${p.section} · ${p.result}`;
+  if(embeddedMode && anchor){
+    const top = Math.max(0, anchor.offsetTop - 24);
+    $('lightbox').style.top = `${top}px`;
+  }
   $('lightbox').classList.add('open');
   $('lightbox').setAttribute('aria-hidden','false');
-  document.body.style.overflow='hidden';
+  if(!embeddedMode){
+    document.body.style.overflow='hidden';
+  }
 }
 
 function moveLightbox(delta){
@@ -269,6 +275,7 @@ function closeLightbox(){
   $('lightbox').classList.remove('open');
   $('lightbox').setAttribute('aria-hidden','true');
   $('lightboxImage').src='';
+  $('lightbox').style.top = '';
   document.body.style.overflow='';
 }
 
@@ -277,7 +284,7 @@ function galleryActivate(e){
   if(!box) return;
   if(e.type==='keydown' && !['Enter',' '].includes(e.key)) return;
   if(e.type==='keydown') e.preventDefault();
-  openLightbox(box.dataset.index,box.dataset.target);
+  openLightbox(box.dataset.index,box.dataset.target,box);
 }
 
 async function init(){
