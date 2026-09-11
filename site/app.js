@@ -2,18 +2,13 @@ const state = {
   photos: [],
   ioty: [],
   visible: [],
-  visibleLimit: 12,
+  currentPage: 1,
+  pageSize: 25,
   lightboxIndex: 0,
   mode: 'members'
 };
 
 const embeddedMode = new URLSearchParams(location.search).get('embed') === '1';
-
-function pageSize(){
-  return 50;
-}
-
-state.visibleLimit = pageSize();
 
 if(embeddedMode){
   document.body.classList.add('embed-mode');
@@ -171,7 +166,7 @@ function refreshFacetOptions(initial=false){
 }
 
 function facetChanged(){
-  state.visibleLimit = pageSize();
+  state.currentPage = 1;
   refreshFacetOptions();
   renderMembers();
 }
@@ -199,28 +194,44 @@ function renderMembers(){
 
   state.visible = shown;
   $('galleryTitle').textContent = memberSelect.value || 'All members';
-  const memberCount = new Set(shown.map(p=>p.member)).size;
   const active = [];
   if(yearSelect.value) active.push(yearSelect.value);
   if(monthSelect.value) active.push(monthSelect.value);
   if(subjectSelect.value) active.push(`Set subject: ${subjectSelect.value}`);
-  $('gallerySummary').textContent =
-    `${shown.length.toLocaleString()} image${shown.length===1?'':'s'}` +
-    (!memberSelect.value ? ` from ${memberCount} photographer${memberCount===1?'':'s'}` : '') +
-    (active.length ? ` · ${active.join(' · ')}` : '');
+  if(resultSelect.value) active.push(resultSelect.options[resultSelect.selectedIndex]?.text || resultSelect.value);
 
-  const displayCount = Math.min(state.visibleLimit, shown.length);
-  gallery.innerHTML = shown.slice(0, displayCount).map((p,i)=>card(p,i,'members')).join('');
+  const hasActiveFilter =
+    memberSelect.value ||
+    yearSelect.value ||
+    monthSelect.value ||
+    subjectSelect.value ||
+    resultSelect.value;
 
-  const moreRemaining = shown.length - displayCount;
-  const hasMore = moreRemaining > 0;
-  $('loadMoreWrap').hidden = !hasMore;
-  $('loadMore').hidden = !hasMore;
-  $('loadMoreStatus').textContent =
-    hasMore ? `Showing ${displayCount.toLocaleString()} of ${shown.length.toLocaleString()} images` : '';
-  if(hasMore){
-    $('loadMore').textContent = `Load more (${Math.min(pageSize(), moreRemaining)})`;
-  }
+  // Keep the unfiltered landing view clean: no total image/photographer count.
+  // Once the visitor filters the gallery, show only the useful filtered context.
+  $('gallerySummary').textContent = hasActiveFilter
+    ? `${shown.length.toLocaleString()} image${shown.length===1?'':'s'}` +
+      (active.length ? ` · ${active.join(' · ')}` : '')
+    : '';
+
+  const totalPages = Math.max(1, Math.ceil(shown.length / state.pageSize));
+  if(state.currentPage > totalPages) state.currentPage = totalPages;
+
+  const start = (state.currentPage - 1) * state.pageSize;
+  const end = Math.min(start + state.pageSize, shown.length);
+
+  gallery.innerHTML = shown
+    .slice(start, end)
+    .map((p,i)=>card(p,start+i,'members'))
+    .join('');
+
+  const showPager = shown.length > state.pageSize;
+  $('pagination').hidden = !showPager;
+  $('pagePrev').disabled = state.currentPage <= 1;
+  $('pageNext').disabled = state.currentPage >= totalPages;
+  $('pageStatus').textContent = shown.length
+    ? `Showing ${start + 1}–${end} of ${shown.length.toLocaleString()} · Page ${state.currentPage} of ${totalPages}`
+    : '';
 
   $('emptyState').hidden = shown.length !== 0;
   updateHash();
@@ -305,8 +316,7 @@ async function init(){
     if(!photosRes.ok || !iotyRes.ok) throw new Error('Gallery data could not be loaded.');
     state.photos = await photosRes.json();
     state.ioty = await iotyRes.json();
-    $('totalImages').textContent = state.photos.length.toLocaleString();
-    populateFilters();
+      populateFilters();
     renderMembers();
     renderIoty();
   }catch(err){
@@ -322,14 +332,24 @@ subjectSelect.addEventListener('change',facetChanged);
 resultSelect.addEventListener('change',facetChanged);
 $('clearFilters').addEventListener('click',()=>{
   memberSelect.value=''; yearSelect.value=''; monthSelect.value=''; subjectSelect.value=''; resultSelect.value='';
-  state.visibleLimit = pageSize();
+  state.currentPage = 1;
   refreshFacetOptions();
   renderMembers();
 });
 
-$('loadMore').addEventListener('click',()=>{
-  state.visibleLimit += pageSize();
+$('pagePrev').addEventListener('click',()=>{
+  if(state.currentPage <= 1) return;
+  state.currentPage--;
   renderMembers();
+  document.getElementById('membersSection').scrollIntoView({behavior:'smooth',block:'start'});
+});
+
+$('pageNext').addEventListener('click',()=>{
+  const totalPages = Math.max(1, Math.ceil(state.visible.length / state.pageSize));
+  if(state.currentPage >= totalPages) return;
+  state.currentPage++;
+  renderMembers();
+  document.getElementById('membersSection').scrollIntoView({behavior:'smooth',block:'start'});
 });
 $('membersTab').addEventListener('click',()=>switchTab('members'));
 $('iotyTab').addEventListener('click',()=>switchTab('ioty'));

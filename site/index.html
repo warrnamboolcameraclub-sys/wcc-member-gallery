@@ -15,10 +15,6 @@
       <h1>Member Photography</h1>
       <p class="intro">Competition photography from our members. Select a photographer to explore their images, then click any photograph for a larger view.</p>
     </div>
-    <div class="hero-stat" aria-live="polite">
-      <strong id="totalImages">—</strong>
-      <span>competition images</span>
-    </div>
   </div>
 </header>
 
@@ -65,9 +61,10 @@
     </div>
 
     <div class="gallery" id="gallery" aria-live="polite"></div>
-    <div class="load-more-wrap" id="loadMoreWrap" hidden>
-      <div class="load-more-status" id="loadMoreStatus"></div>
-      <button class="load-more" id="loadMore" type="button">Load more</button>
+    <div class="pagination" id="pagination" hidden>
+      <button class="page-button" id="pagePrev" type="button">&#10094; Previous</button>
+      <div class="page-status" id="pageStatus" aria-live="polite"></div>
+      <button class="page-button" id="pageNext" type="button">Next &#10095;</button>
     </div>
     <div class="empty" id="emptyState" hidden>No photographs match the selected filters.</div>
   </section>
