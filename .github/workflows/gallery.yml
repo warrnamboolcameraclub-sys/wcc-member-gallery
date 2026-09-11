@@ -1,0 +1,112 @@
+name: Update and deploy member gallery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/gallery.yml"
+  schedule:
+    # Monthly check. GitHub cron uses UTC.
+    - cron: "30 0 10 * *"
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: "Scan all four historical listing pages instead of page 1 only"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: "wcc-member-gallery"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        if: github.event_name != 'push'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install importer dependencies
+        if: github.event_name != 'push'
+        run: pip install -r requirements.txt
+
+      - name: Import newly published competition results
+        if: github.event_name != 'push'
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.full_scan }}" == "true" ]]; then
+            python scripts/wcc_importer.py --initial
+          else
+            python scripts/wcc_importer.py
+          fi
+
+      - name: Validate gallery data
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("site/data")
+          photos = json.loads((root / "photos.json").read_text(encoding="utf-8"))
+          ioty = json.loads((root / "ioty.json").read_text(encoding="utf-8"))
+          review = json.loads((root / "review.json").read_text(encoding="utf-8"))
+
+          required = {"member","title","competition","section","result","image","largeImage"}
+          bad = [i for i,p in enumerate(photos) if not required.issubset(p) or not all(p.get(k) for k in required)]
+          if bad:
+              raise SystemExit(f"Invalid regular gallery records: {bad[:10]}")
+          if review:
+              raise SystemExit(f"Importer produced {len(review)} review record(s). Review required before publishing.")
+          print(f"Validated {len(photos)} regular images and {len(ioty)} IOTY award images.")
+          PY
+
+      - name: Commit updated data
+        if: github.event_name != 'push'
+        shell: bash
+        run: |
+          if git diff --quiet -- site/data; then
+            echo "No new gallery data."
+          else
+            git config user.name "WCC Gallery Bot"
+            git config user.email "wcc-gallery-bot@users.noreply.github.com"
+            git add site/data
+            git commit -m "Update MyPhotoClub gallery data"
+            git push
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "site"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
