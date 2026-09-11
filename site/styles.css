@@ -236,3 +236,24 @@ body.embed-mode .lightbox-nav{
     top:270px !important;
   }
 }
+
+
+/* v12: correct flex-axis alignment for the Zenfolio embedded lightbox.
+   .lightbox is a flex ROW. Therefore:
+   - justify-content controls horizontal alignment
+   - align-items controls vertical alignment
+   Keep the viewer centred horizontally and aligned to the top vertically. */
+body.embed-mode .lightbox{
+  justify-content:center !important;
+  align-items:flex-start !important;
+}
+
+body.embed-mode .lightbox-inner{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+body.embed-mode .lightbox img{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
