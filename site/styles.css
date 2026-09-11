@@ -200,3 +200,39 @@ body.embed-mode .lightbox-next{right:18px}
     max-height:500px;
   }
 }
+
+
+/* v10: In Zenfolio embed mode the enlarged image should begin at the clicked
+   row, not be vertically centred hundreds of pixels lower inside the overlay. */
+body.embed-mode .lightbox{
+  justify-content:flex-start !important;
+  align-items:center !important;
+  min-height:0 !important;
+  height:auto !important;
+  padding:8px 22px 22px !important;
+}
+
+body.embed-mode .lightbox-inner{
+  margin-top:0 !important;
+  max-height:none !important;
+}
+
+body.embed-mode .lightbox img{
+  max-height:650px !important;
+}
+
+body.embed-mode .lightbox-nav{
+  top:325px !important;
+}
+
+@media(max-width:700px){
+  body.embed-mode .lightbox{
+    padding:6px 10px 16px !important;
+  }
+  body.embed-mode .lightbox img{
+    max-height:540px !important;
+  }
+  body.embed-mode .lightbox-nav{
+    top:270px !important;
+  }
+}

@@ -256,7 +256,8 @@ function openLightbox(index,target,anchor=null){
   $('lightboxTitle').textContent = displayTitle(p.title);
   $('lightboxMeta').textContent = `${p.member} · ${p.competition} · ${p.section} · ${p.result}`;
   if(embeddedMode && anchor){
-    const top = Math.max(0, anchor.offsetTop - 24);
+    const rect = anchor.getBoundingClientRect();
+    const top = Math.max(0, rect.top + window.scrollY - 8);
     $('lightbox').style.top = `${top}px`;
   }
   $('lightbox').classList.add('open');
