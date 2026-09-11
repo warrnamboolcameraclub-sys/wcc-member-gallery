@@ -267,20 +267,41 @@ function switchTab(mode){
 function openLightbox(index,target,anchor=null){
   const list = target==='ioty' ? state.ioty : state.visible;
   if(!list.length) return;
+
   state.mode = target;
   state.lightboxIndex = (Number(index)+list.length)%list.length;
   const p = list[state.lightboxIndex];
+
   $('lightboxImage').src = p.largeImage || p.image.replace('-small.','-large.');
   $('lightboxImage').alt = `${displayTitle(p.title)} by ${p.member}`;
   $('lightboxTitle').textContent = displayTitle(p.title);
   $('lightboxMeta').textContent = `${p.member} · ${p.competition} · ${p.section} · ${p.result}`;
+
+  const lightbox = $('lightbox');
+  const documentHeight = Math.max(
+    document.documentElement.scrollHeight,
+    document.body.scrollHeight
+  );
+
+  // Open first so its actual rendered height can be measured.
+  lightbox.style.top = embeddedMode ? '0px' : '';
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden','false');
+
   if(embeddedMode && anchor){
     const rect = anchor.getBoundingClientRect();
-    const top = Math.max(0, rect.top + window.scrollY - 8);
-    $('lightbox').style.top = `${top}px`;
+    const desiredTop = Math.max(0, rect.top + window.scrollY - 8);
+
+    // Keep the entire enlarged photograph, caption and controls inside the
+    // fixed-height Zenfolio iframe. Bottom-row photographs therefore shift
+    // the lightbox upward instead of being clipped by the iframe boundary.
+    const lightboxHeight = lightbox.getBoundingClientRect().height || 720;
+    const maxTop = Math.max(0, documentHeight - lightboxHeight - 8);
+    const top = Math.min(desiredTop, maxTop);
+
+    lightbox.style.top = `${top}px`;
   }
-  $('lightbox').classList.add('open');
-  $('lightbox').setAttribute('aria-hidden','false');
+
   if(!embeddedMode){
     document.body.style.overflow='hidden';
   }
