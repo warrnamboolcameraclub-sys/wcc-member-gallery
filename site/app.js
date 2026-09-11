@@ -227,13 +227,21 @@ function renderMembers(){
 }
 
 function renderIoty(){
-  const shown = state.ioty.slice().sort((a,b)=>{
-    const section = String(a.section||'').localeCompare(String(b.section||''));
-    if(section) return section;
-    const rank = {'1st Place':1,'2nd Place':2,'3rd Place':3};
-    return (rank[a.result]||99)-(rank[b.result]||99);
-  });
-  iotyGallery.innerHTML = shown.map((p,i)=>card(p,i,'ioty')).join('');
+  const shown = state.ioty
+    .map((photo,index)=>({photo,index}))
+    .sort((a,b)=>{
+      const section = String(a.photo.section||'').localeCompare(String(b.photo.section||''));
+      if(section) return section;
+      const rank = {'1st Place':1,'2nd Place':2,'3rd Place':3};
+      return (rank[a.photo.result]||99)-(rank[b.photo.result]||99);
+    });
+
+  // Preserve each photograph's original index from state.ioty.
+  // The lightbox reads state.ioty[data-index], so using the sorted
+  // display position would open the wrong photograph.
+  iotyGallery.innerHTML = shown
+    .map(({photo,index})=>card(photo,index,'ioty'))
+    .join('');
 }
 
 function switchTab(mode){
