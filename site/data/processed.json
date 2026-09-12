@@ -131,36 +131,15 @@
       "processedAt": "2026-09-11T07:20:23+00:00"
     }
   },
-  "lastRun": "2026-09-11T09:22:38+00:00",
-  "mode": "initial",
+  "lastRun": "2026-09-12T00:40:48+00:00",
+  "mode": "monthly",
   "listingDiagnostics": [
     {
       "page": "https://warrnambool.myphotoclub.com.au/",
       "status": 200,
       "finalUrl": "https://warrnambool.myphotoclub.com.au/",
       "htmlBodyParsed": true,
-      "checkedAt": "2026-09-11T09:22:32+00:00"
-    },
-    {
-      "page": "https://warrnambool.myphotoclub.com.au/page/2/",
-      "status": 200,
-      "finalUrl": "https://warrnambool.myphotoclub.com.au/page/2/",
-      "htmlBodyParsed": true,
-      "checkedAt": "2026-09-11T09:22:34+00:00"
-    },
-    {
-      "page": "https://warrnambool.myphotoclub.com.au/page/3/",
-      "status": 404,
-      "finalUrl": "https://warrnambool.myphotoclub.com.au/page/3/",
-      "htmlBodyParsed": true,
-      "checkedAt": "2026-09-11T09:22:36+00:00"
-    },
-    {
-      "page": "https://warrnambool.myphotoclub.com.au/page/4/",
-      "status": 404,
-      "finalUrl": "https://warrnambool.myphotoclub.com.au/page/4/",
-      "htmlBodyParsed": true,
-      "checkedAt": "2026-09-11T09:22:38+00:00"
+      "checkedAt": "2026-09-12T00:40:48+00:00"
     }
   ]
 }
