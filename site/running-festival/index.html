@@ -180,24 +180,25 @@ main{position:relative;min-height:0;overflow:hidden}
   font-size:11px;font-weight:800;line-height:19px;text-align:center;
   box-shadow:0 1px 5px rgba(0,0,0,.28)
 }
-.group-nav{
-  display:flex;align-items:center;gap:8px;margin:10px 0 12px;
-  padding:8px;border:1px solid #ccd7dc;border-radius:10px;background:#f6f9fa
+
+.group-tabs{
+  display:flex;gap:6px;margin:10px 0 14px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none
 }
-.group-nav button{
-  width:44px;height:40px;border:1px solid #aebdc4;border-radius:8px;
-  background:#fff;color:#0f4c5c;font-size:20px;font-weight:800;cursor:pointer
+.group-tabs::-webkit-scrollbar{display:none}
+.group-tab{
+  flex:0 0 auto;min-height:40px;padding:8px 12px;border:1px solid #b8c7ce;
+  border-radius:999px;background:#fff;color:#27424d;font-size:13px;
+  font-weight:800;cursor:pointer;white-space:nowrap
 }
-.group-nav .group-status{
-  flex:1;text-align:center;font-size:14px;font-weight:800;color:#31434b
-}
+.group-tab.active{background:#0f4c5c;color:#fff;border-color:#0f4c5c}
 
 </style>
 </head>
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.4 · Cross-platform</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.5 · Cross-platform</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -279,13 +280,6 @@ function locationGroupFor(id){
     .filter(x=>haversineMeters(base,x)<=35)
     .sort((a,b)=>a.name.localeCompare(b.name));
 }
-function switchGroupedLocation(id,delta){
-  const group=locationGroupFor(id);
-  if(group.length<2)return;
-  const idx=group.findIndex(x=>x.id===id);
-  const next=group[(idx+delta+group.length)%group.length];
-  openLocation(next.id,true);
-}
 
 function renderMarkers(){
   markerLayer.querySelectorAll('[data-marker],.marker-group,.move-marker').forEach(e=>e.remove());
@@ -349,7 +343,7 @@ function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!
   const directions=`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}`;
   detailBody.innerHTML=`
     <h3 class="place">${escapeHtml(l.name)}</h3>${photographer}
-    ${(()=>{const g=locationGroupFor(l.id);if(g.length<2)return '';const idx=g.findIndex(x=>x.id===l.id);return `<div class="group-nav"><button type="button" onclick="switchGroupedLocation('${l.id}',-1)">‹</button><div class="group-status">${idx+1} of ${g.length}</div><button type="button" onclick="switchGroupedLocation('${l.id}',1)">›</button></div>`})()}
+    ${(()=>{const g=locationGroupFor(l.id);if(g.length<2)return '';return `<div class="group-tabs">${g.map((x,i)=>`<button type="button" class="group-tab ${x.id===l.id?'active':''}" onclick="openLocation('${x.id}',true)">${i+1} of ${g.length}</button>`).join('')}</div>`})()}
     <div class="be-there"><strong>BE THERE BY ${escapeHtml(l.beThereBy||'')}</strong><p>${escapeHtml(l.comment)}</p></div>
     <div class="actions"><a class="action primary" target="_blank" rel="noopener" href="${directions}">Directions</a><button class="action" id="copyLink">Copy this location link</button></div>
     ${l.movement&&l.movement.length?`<div class="section-title">Movement plan</div>${l.movement.map(m=>`<div class="movement"><strong>MOVE TO ${escapeHtml(m.name)}</strong><p><b>Leave by ${escapeHtml(m.leaveBy)}</b> · Be there by ${escapeHtml(m.arriveBy)}</p><p>${escapeHtml(m.note)}</p><p><a class="action" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}">Directions to next position</a></p></div>`).join('')}`:''}
