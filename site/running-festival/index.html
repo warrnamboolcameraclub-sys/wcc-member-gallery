@@ -171,12 +171,33 @@ main{position:relative;min-height:0;overflow:hidden}
   body.instructions-open #map{visibility:hidden}
 }
 @media(min-width:1000px){#detail{right:18px;bottom:18px}.marker-label{display:block;opacity:.82}.marker.selected .marker-label{opacity:1}}
+
+.marker-group{position:absolute;transform:translate(-50%,-100%);z-index:12}
+.marker-group .pin{position:relative}
+.marker-count{
+  position:absolute;right:-11px;top:-11px;min-width:23px;height:23px;padding:0 5px;
+  border-radius:999px;background:#111;color:#fff;border:2px solid #fff;
+  font-size:11px;font-weight:800;line-height:19px;text-align:center;
+  box-shadow:0 1px 5px rgba(0,0,0,.28)
+}
+.group-nav{
+  display:flex;align-items:center;gap:8px;margin:10px 0 12px;
+  padding:8px;border:1px solid #ccd7dc;border-radius:10px;background:#f6f9fa
+}
+.group-nav button{
+  width:44px;height:40px;border:1px solid #aebdc4;border-radius:8px;
+  background:#fff;color:#0f4c5c;font-size:20px;font-weight:800;cursor:pointer
+}
+.group-nav .group-status{
+  flex:1;text-align:center;font-size:14px;font-weight:800;color:#31434b
+}
+
 </style>
 </head>
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.3 · Cross-platform</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.4 · Cross-platform</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -243,21 +264,92 @@ function renderTiles(){
 }
 function pathD(coords){return coords.map((p,i)=>{const q=screen(p[0],p[1]);return(i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1)}).join(' ')}
 function renderRoutes(){routeLayer.innerHTML='';D.routes.forEach(r=>{const shadow=document.createElementNS('http://www.w3.org/2000/svg','path');shadow.setAttribute('d',pathD(r.coordinates));shadow.setAttribute('class','route-shadow');routeLayer.appendChild(shadow);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',pathD(r.coordinates));p.setAttribute('class','route');p.setAttribute('stroke',r.color);p.setAttribute('stroke-width','5');p.setAttribute('stroke-opacity','.9');routeLayer.appendChild(p);});}
+
+function haversineMeters(a,b){
+  const R=6371000,toRad=v=>v*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat),dLon=toRad(b.lon-a.lon);
+  const la1=toRad(a.lat),la2=toRad(b.lat);
+  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function locationGroupFor(id){
+  const base=D.locations.find(x=>x.id===id);
+  if(!base)return [];
+  return D.locations
+    .filter(x=>haversineMeters(base,x)<=35)
+    .sort((a,b)=>a.name.localeCompare(b.name));
+}
+function switchGroupedLocation(id,delta){
+  const group=locationGroupFor(id);
+  if(group.length<2)return;
+  const idx=group.findIndex(x=>x.id===id);
+  const next=group[(idx+delta+group.length)%group.length];
+  openLocation(next.id,true);
+}
+
 function renderMarkers(){
-  D.locations.forEach(l=>{let el=document.querySelector(`[data-marker="${l.id}"]`);if(!el){el=document.createElement('button');el.className='marker';el.dataset.marker=l.id;el.innerHTML=`<span class="marker-label"></span><span class="pin"><span>📷</span></span>`;el.querySelector('.marker-label').textContent=l.photographer||l.name;el.addEventListener('click',e=>{e.stopPropagation();openLocation(l.id,true)});markerLayer.appendChild(el);}const q=screen(l.lat,l.lon);el.style.left=q.x+'px';el.style.top=q.y+'px';el.classList.toggle('selected',selected===l.id);});
-  document.querySelectorAll('.move-marker').forEach(e=>e.remove());
-  D.locations.forEach(l=>(l.movement||[]).forEach((m,idx)=>{const el=document.createElement('button');el.className='marker move-marker';el.style.zIndex='7';el.innerHTML=`<span class="marker-label">${escapeHtml(m.name)}</span><span class="pin" style="background:#2563eb"><span>↪</span></span>`;el.title=`Next position: ${m.name}`;el.addEventListener('click',e=>{e.stopPropagation();openLocation(l.id,true)});const q=screen(m.lat,m.lon);el.style.left=q.x+'px';el.style.top=q.y+'px';markerLayer.appendChild(el);}));
-  if(userMarker){const q=screen(userMarker.lat,userMarker.lon);userMarker.el.style.left=q.x+'px';userMarker.el.style.top=q.y+'px';}
+  markerLayer.querySelectorAll('[data-marker],.marker-group,.move-marker').forEach(e=>e.remove());
+
+  const used=new Set();
+  D.locations.forEach(l=>{
+    if(used.has(l.id))return;
+
+    const group=D.locations.filter(x=>!used.has(x.id)&&haversineMeters(l,x)<=35);
+    group.forEach(x=>used.add(x.id));
+
+    const anchor=group[0];
+    const q=screen(anchor.lat,anchor.lon);
+    const el=document.createElement('button');
+
+    if(group.length>1){
+      el.className='marker marker-group';
+      el.dataset.group=group.map(x=>x.id).join(',');
+      el.innerHTML=`<span class="marker-label">${escapeHtml(group.map(x=>x.name).join(' / '))}</span><span class="pin"><span>📷</span><span class="marker-count">${group.length}</span></span>`;
+      el.title=`${group.length} photographers at this location`;
+      el.addEventListener('click',e=>{e.stopPropagation();openLocation(group[0].id,true)});
+    }else{
+      el.className='marker';
+      el.dataset.marker=anchor.id;
+      el.innerHTML=`<span class="marker-label">${escapeHtml(anchor.photographer||anchor.name)}</span><span class="pin"><span>📷</span></span>`;
+      el.title=anchor.name;
+      el.addEventListener('click',e=>{e.stopPropagation();openLocation(anchor.id,true)});
+    }
+
+    el.style.left=q.x+'px';
+    el.style.top=q.y+'px';
+    if(group.some(x=>x.id===selected))el.classList.add('selected');
+    markerLayer.appendChild(el);
+  });
+
+  D.locations.forEach(l=>(l.movement||[]).forEach(m=>{
+    const el=document.createElement('button');
+    el.className='marker move-marker';
+    el.style.zIndex='7';
+    el.innerHTML=`<span class="marker-label">${escapeHtml(m.name)}</span><span class="pin" style="background:#2563eb"><span>↪</span></span>`;
+    el.title=`Next position: ${m.name}`;
+    el.addEventListener('click',e=>{e.stopPropagation();openLocation(l.id,true)});
+    const q=screen(m.lat,m.lon);
+    el.style.left=q.x+'px';
+    el.style.top=q.y+'px';
+    markerLayer.appendChild(el);
+  }));
+
+  if(userMarker){
+    const q=screen(userMarker.lat,userMarker.lon);
+    userMarker.el.style.left=q.x+'px';
+    userMarker.el.style.top=q.y+'px';
+  }
 }
 function render(full=true){W=map.clientWidth;H=map.clientHeight;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);if(full){tiles.style.transform='';tileDragX=tileDragY=0;renderTiles();}renderRoutes();renderMarkers();}
 function fitAll(){let minLat=90,maxLat=-90,minLon=180,maxLon=-180;D.routes.forEach(r=>r.coordinates.forEach(([la,lo])=>{minLat=Math.min(minLat,la);maxLat=Math.max(maxLat,la);minLon=Math.min(minLon,lo);maxLon=Math.max(maxLon,lo)}));center={lat:(minLat+maxLat)/2,lon:(minLon+maxLon)/2};for(let z=17;z>=11;z--){const a=world(maxLat,minLon,z),b=world(minLat,maxLon,z);if(Math.abs(b.x-a.x)<W-80&&Math.abs(b.y-a.y)<H-100){zoom=z;break}}render();}
 function raceBox(r,times){const c=raceColors[r];return `<div class="race" style="--race:${c}"><b>${r}</b><div class="t">${times.length?times.map(x=>`${x.time} <span style="color:#7a878c">· km ${x.km.toFixed(1)}</span>`).join('<br>'):'<span class="none">Does not pass this point</span>'}</div></div>`}
-function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!l)return;const hint=document.getElementById('instructionHint');if(hint)hint.style.display='none';selected=id;document.querySelectorAll('.marker').forEach(m=>m.classList.toggle('selected',m.dataset.marker===id));
+function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!l)return;const hint=document.getElementById('instructionHint');if(hint)hint.style.display='none';selected=id;document.querySelectorAll('.marker').forEach(m=>{const ids=(m.dataset.group||m.dataset.marker||'').split(',');m.classList.toggle('selected',ids.includes(id));});
   if(move){center={lat:l.lat,lon:l.lon};if(zoom<15)zoom=15;render();}
   const photographer=l.photographer?`<p class="photographer">${escapeHtml(l.photographer)}</p>`:'';
   const directions=`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}`;
   detailBody.innerHTML=`
     <h3 class="place">${escapeHtml(l.name)}</h3>${photographer}
+    ${(()=>{const g=locationGroupFor(l.id);if(g.length<2)return '';const idx=g.findIndex(x=>x.id===l.id);return `<div class="group-nav"><button type="button" onclick="switchGroupedLocation('${l.id}',-1)">‹</button><div class="group-status">${idx+1} of ${g.length}</div><button type="button" onclick="switchGroupedLocation('${l.id}',1)">›</button></div>`})()}
     <div class="be-there"><strong>BE THERE BY ${escapeHtml(l.beThereBy||'')}</strong><p>${escapeHtml(l.comment)}</p></div>
     <div class="actions"><a class="action primary" target="_blank" rel="noopener" href="${directions}">Directions</a><button class="action" id="copyLink">Copy this location link</button></div>
     ${l.movement&&l.movement.length?`<div class="section-title">Movement plan</div>${l.movement.map(m=>`<div class="movement"><strong>MOVE TO ${escapeHtml(m.name)}</strong><p><b>Leave by ${escapeHtml(m.leaveBy)}</b> · Be there by ${escapeHtml(m.arriveBy)}</p><p>${escapeHtml(m.note)}</p><p><a class="action" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}">Directions to next position</a></p></div>`).join('')}`:''}
@@ -265,7 +357,7 @@ function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!
     <div class="times">${['Marathon','Half Marathon','10 km','6 km'].map(r=>raceBox(r,l.raceTimes[r]||[])).join('')}</div>
     <div class="section-title">Expected sequence</div>
     <ul class="sequence">${l.chronological.length?l.chronological.map(x=>`<li><time>${x.time}</time>${escapeHtml(x.race)} leader <span style="color:#7a878c">(km ${x.km.toFixed(1)})</span></li>`).join(''):'<li>No leader sequence available.</li>'}</ul>
-    <div class="footnote">Race starts: Marathon ${D.event.starts.Marathon}, Half ${D.event.starts['Half Marathon']}, 10 km ${D.event.starts['10 km']}, 6 km ${D.event.starts['6 km']}.</div>`;
+    `;
   detail.classList.add('open');if(window.matchMedia('(max-width:720px)').matches)document.body.classList.add('instructions-open');history.replaceState(null,'','#'+id);document.getElementById('copyLink').onclick=()=>copyLink(id);
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
