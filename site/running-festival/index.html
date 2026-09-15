@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f4c5c">
+<title>WRF 2026 Photography Map</title>
+<style>
+:root{--teal:#0f4c5c;--teal2:#14697a;--ink:#18252b;--muted:#5c6970;--panel:#fff;--line:#dbe3e7;--warn:#fff2b8;--warn-border:#e0b400;--bg:#eef3f5;--shadow:0 8px 28px rgba(0,0,0,.18)}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+button,a{font:inherit}button{cursor:pointer}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+header{background:var(--teal);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:40;box-shadow:0 2px 7px rgba(0,0,0,.2)}
+header .title{min-width:0;flex:1}header h1{font-size:18px;line-height:1.15;margin:0;font-weight:750}header p{font-size:12px;margin:3px 0 0;opacity:.86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-btn{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.1);color:#fff;border-radius:9px;padding:8px 10px;font-weight:650}
+main{position:relative;min-height:0;overflow:hidden}
+#map{position:absolute;inset:0;background:linear-gradient(155deg,#edf4f6,#dce8ec);touch-action:none;overflow:hidden}
+#tiles{position:absolute;inset:0;overflow:hidden}.tile{position:absolute;width:256px;height:256px;user-select:none;pointer-events:none}.tile.failed{display:none}
+#overlay{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.route{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.route-shadow{fill:none;stroke:#fff;stroke-opacity:.82;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.marker{position:absolute;transform:translate(-50%,-100%);z-index:8;border:0;background:transparent;padding:0}.pin{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#c43131;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:grid;place-items:center}.pin span{transform:rotate(45deg);font-size:17px}.marker.selected .pin{background:#0f4c5c;scale:1.12}.marker-label{position:absolute;left:50%;top:5px;transform:translate(-50%,-100%);background:rgba(255,255,255,.96);border:1px solid #cad5d9;border-radius:7px;padding:4px 7px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 1px 5px rgba(0,0,0,.15);display:none}.marker.selected .marker-label{display:block}
+.map-controls{position:absolute;top:10px;left:10px;z-index:25;display:grid;gap:7px}.map-controls button{width:42px;height:42px;border:1px solid #c8d3d8;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);font-weight:800;color:#24343b}.map-controls button.wide{width:auto;padding:0 11px}
+.legend{position:absolute;right:10px;top:10px;z-index:22;background:rgba(255,255,255,.95);border:1px solid #ccd7db;border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12)}.leg{display:flex;gap:7px;align-items:center;margin:3px 0}.sw{width:22px;border-top:4px solid;border-radius:3px}
+#drawer{position:absolute;z-index:35;background:#fff;box-shadow:var(--shadow);overflow:auto;overscroll-behavior:contain}.drawer-head{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:13px 14px;display:flex;align-items:center;gap:10px;z-index:3}.drawer-head h2{font-size:17px;margin:0;flex:1}.close{border:0;background:#eef3f5;border-radius:50%;width:34px;height:34px;font-size:18px}
+#listDrawer{left:0;top:0;bottom:0;width:min(380px,92vw);transform:translateX(-105%);transition:.2s ease}#listDrawer.open{transform:translateX(0)}
+.location-card{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}.location-card:hover{background:#f4f8f9}.location-card h3{font-size:15px;margin:0 0 5px}.mini-time{display:inline-block;background:#fff2b8;border:1px solid #e0b400;border-radius:999px;padding:3px 8px;font-size:12px;font-weight:800}.mini-comment{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#detail{right:14px;bottom:14px;width:min(430px,calc(100vw - 28px));max-height:calc(100% - 28px);border-radius:14px;display:none}#detail.open{display:block}.detail-body{padding:14px}.place{font-size:20px;margin:0 0 3px}.photographer{color:var(--teal);font-weight:750;margin:0 0 10px}.be-there{background:var(--warn);border:1px solid var(--warn-border);border-radius:10px;padding:11px 12px;margin:0 0 12px}.be-there strong{display:block;font-size:21px;letter-spacing:.01em;margin-bottom:4px}.be-there p{margin:0;font-size:13px;line-height:1.4}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.action{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #b9c9ce;background:#fff;color:#16333d;border-radius:9px;padding:9px 11px;font-weight:700;font-size:13px}.action.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#526167;margin:16px 0 8px;font-weight:800}.times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.race{border:1px solid var(--line);border-left:5px solid var(--race);border-radius:9px;padding:8px}.race b{font-size:13px}.race .t{font-size:13px;margin-top:4px}.none{color:#89959a}.sequence{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}.sequence li{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}.sequence time{display:inline-block;width:72px;font-weight:800}.footnote{font-size:11px;color:#6c797e;line-height:1.4;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.attribution{position:absolute;left:8px;bottom:7px;z-index:21;background:rgba(255,255,255,.88);padding:2px 5px;border-radius:4px;font-size:9px;color:#526167}.attribution a{color:#365d6a;text-decoration:none}.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%) translateY(120px);background:#17242a;color:#fff;padding:9px 13px;border-radius:999px;font-size:12px;z-index:60;transition:.2s}.toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:720px){header{padding-top:max(9px,env(safe-area-inset-top));}header h1{font-size:16px}header p{font-size:11px}.legend{font-size:11px;top:auto;bottom:10px;right:8px;padding:6px 8px}.map-controls{top:8px;left:8px}.map-controls button{width:40px;height:40px}.times{grid-template-columns:1fr}#detail{left:0;right:0;bottom:0;width:100%;max-height:72vh;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom)}#detail .drawer-head{padding:10px 14px}.detail-body{padding:12px 14px}.be-there strong{font-size:20px}#listDrawer{width:92vw}}
+@media(min-width:1000px){#detail{right:18px;bottom:18px}.marker-label{display:block;opacity:.82}.marker.selected .marker-label{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September</p></div>
+  <button class="header-btn" id="locationsBtn">Locations</button>
+</header>
+<main>
+  <div id="map" aria-label="Race course photography map">
+    <div id="tiles"></div>
+    <svg id="overlay"><g id="routeLayer"></g></svg>
+    <div id="markerLayer"></div>
+    <div class="map-controls">
+      <button id="zoomIn" title="Zoom in">＋</button>
+      <button id="zoomOut" title="Zoom out">−</button>
+      <button id="fitBtn" title="Show full course">⌂</button>
+      <button id="locateBtn" title="Show my location">◎</button>
+    </div>
+    <div class="legend">
+      <div class="leg"><span class="sw" style="border-color:#2563eb"></span>Half / Marathon</div>
+      <div class="leg"><span class="sw" style="border-color:#f97316"></span>10 km</div>
+      <div class="leg"><span class="sw" style="border-color:#16a34a"></span>6 km</div>
+    </div>
+    <div class="attribution">Basemap © Esri · fallback © OpenStreetMap contributors © CARTO</div>
+  </div>
+
+  <section id="listDrawer" class="drawer" aria-label="Camera locations">
+    <div class="drawer-head"><h2>Camera locations</h2><button class="close" data-close="listDrawer">×</button></div>
+    <div id="locationList"></div>
+  </section>
+
+  <section id="detail" class="drawer" aria-live="polite">
+    <div class="drawer-head"><h2>Camera location</h2><button class="close" data-close="detail">×</button></div>
+    <div class="detail-body" id="detailBody"></div>
+  </section>
+  <div class="toast" id="toast"></div>
+</main>
+</div>
+<script src="data.js"></script>
+<script>
+(()=>{
+'use strict';
+const D=window.WRF_DATA;
+function decodePolyline(s){let i=0,lat=0,lon=0,a=[];while(i<s.length){let b,sh=0,r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lat+=r&1?~(r>>1):r>>1;sh=0;r=0;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);lon+=r&1?~(r>>1):r>>1;a.push([lat/1e5,lon/1e5])}return a}
+D.routes.forEach(r=>{if(r.polyline&&!r.coordinates)r.coordinates=decodePolyline(r.polyline)});
+const map=document.getElementById('map'), tiles=document.getElementById('tiles'), svg=document.getElementById('overlay'), routeLayer=document.getElementById('routeLayer'), markerLayer=document.getElementById('markerLayer');
+const detail=document.getElementById('detail'), detailBody=document.getElementById('detailBody'), listDrawer=document.getElementById('listDrawer');
+const raceColors={'Marathon':'#2563eb','Half Marathon':'#7c3aed','10 km':'#f97316','6 km':'#16a34a'};
+let W=1,H=1,zoom=14,center={lat:-38.396,lon:142.490},drag=null,selected=null,userMarker=null,tileDragX=0,tileDragY=0;
+
+function world(lat,lon,z){const scale=256*Math.pow(2,z); const x=(lon+180)/360*scale; const s=Math.sin(lat*Math.PI/180); const y=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*scale; return{x,y};}
+function unworld(x,y,z){const scale=256*Math.pow(2,z);const lon=x/scale*360-180;const n=Math.PI-2*Math.PI*y/scale;const lat=180/Math.PI*Math.atan(.5*(Math.exp(n)-Math.exp(-n)));return{lat,lon};}
+function screen(lat,lon){const c=world(center.lat,center.lon,zoom),p=world(lat,lon,zoom);return{x:W/2+(p.x-c.x),y:H/2+(p.y-c.y)};}
+function centerFromScreenShift(dx,dy){const c=world(center.lat,center.lon,zoom);center=unworld(c.x-dx,c.y-dy,zoom);}
+function tileUrl(z,x,y,provider=0){
+  if(provider===0)return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`;
+  const s=['a','b','c','d'][Math.abs(x+y)%4];return `https://${s}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`;
+}
+function renderTiles(){
+  tiles.innerHTML=''; const c=world(center.lat,center.lon,zoom); const left=c.x-W/2, top=c.y-H/2; const x0=Math.floor(left/256), y0=Math.floor(top/256), x1=Math.floor((left+W)/256), y1=Math.floor((top+H)/256); const max=Math.pow(2,zoom);
+  for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){
+    if(ty<0||ty>=max)continue; const wx=((tx%max)+max)%max; const img=new Image(); img.className='tile'; img.style.left=(tx*256-left)+'px'; img.style.top=(ty*256-top)+'px'; img.alt=''; img.draggable=false; img.dataset.fallback='0'; img.src=tileUrl(zoom,wx,ty,0); img.onerror=()=>{if(img.dataset.fallback==='0'){img.dataset.fallback='1';img.src=tileUrl(zoom,wx,ty,1);}else img.classList.add('failed');}; tiles.appendChild(img);
+  }
+}
+function pathD(coords){return coords.map((p,i)=>{const q=screen(p[0],p[1]);return(i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1)}).join(' ')}
+function renderRoutes(){routeLayer.innerHTML='';D.routes.forEach(r=>{const shadow=document.createElementNS('http://www.w3.org/2000/svg','path');shadow.setAttribute('d',pathD(r.coordinates));shadow.setAttribute('class','route-shadow');routeLayer.appendChild(shadow);const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',pathD(r.coordinates));p.setAttribute('class','route');p.setAttribute('stroke',r.color);p.setAttribute('stroke-width','5');p.setAttribute('stroke-opacity','.9');routeLayer.appendChild(p);});}
+function renderMarkers(){
+  D.locations.forEach(l=>{let el=document.querySelector(`[data-marker="${l.id}"]`);if(!el){el=document.createElement('button');el.className='marker';el.dataset.marker=l.id;el.innerHTML=`<span class="marker-label"></span><span class="pin"><span>📷</span></span>`;el.querySelector('.marker-label').textContent=l.photographer||l.name;el.addEventListener('click',e=>{e.stopPropagation();openLocation(l.id,true)});markerLayer.appendChild(el);}const q=screen(l.lat,l.lon);el.style.left=q.x+'px';el.style.top=q.y+'px';el.classList.toggle('selected',selected===l.id);});
+  if(userMarker){const q=screen(userMarker.lat,userMarker.lon);userMarker.el.style.left=q.x+'px';userMarker.el.style.top=q.y+'px';}
+}
+function render(full=true){W=map.clientWidth;H=map.clientHeight;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);if(full){tiles.style.transform='';tileDragX=tileDragY=0;renderTiles();}renderRoutes();renderMarkers();}
+function fitAll(){let minLat=90,maxLat=-90,minLon=180,maxLon=-180;D.routes.forEach(r=>r.coordinates.forEach(([la,lo])=>{minLat=Math.min(minLat,la);maxLat=Math.max(maxLat,la);minLon=Math.min(minLon,lo);maxLon=Math.max(maxLon,lo)}));center={lat:(minLat+maxLat)/2,lon:(minLon+maxLon)/2};for(let z=17;z>=11;z--){const a=world(maxLat,minLon,z),b=world(minLat,maxLon,z);if(Math.abs(b.x-a.x)<W-80&&Math.abs(b.y-a.y)<H-100){zoom=z;break}}render();}
+function raceBox(r,times){const c=raceColors[r];return `<div class="race" style="--race:${c}"><b>${r}</b><div class="t">${times.length?times.map(x=>`${x.time} <span style="color:#7a878c">· km ${x.km.toFixed(1)}</span>`).join('<br>'):'<span class="none">Does not pass this point</span>'}</div></div>`}
+function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!l)return;selected=id;document.querySelectorAll('.marker').forEach(m=>m.classList.toggle('selected',m.dataset.marker===id));
+  if(move){center={lat:l.lat,lon:l.lon};if(zoom<15)zoom=15;render();}
+  const photographer=l.photographer?`<p class="photographer">${escapeHtml(l.photographer)}</p>`:'';
+  const directions=`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}`;
+  detailBody.innerHTML=`
+    <h3 class="place">${escapeHtml(l.name)}</h3>${photographer}
+    <div class="be-there"><strong>BE THERE BY ${escapeHtml(l.beThereBy||'')}</strong><p>${escapeHtml(l.comment)}</p></div>
+    <div class="actions"><a class="action primary" target="_blank" rel="noopener" href="${directions}">Directions</a><button class="action" id="copyLink">Copy this location link</button></div>
+    <div class="section-title">Front-runner planning times</div>
+    <div class="times">${['Marathon','Half Marathon','10 km','6 km'].map(r=>raceBox(r,l.raceTimes[r]||[])).join('')}</div>
+    <div class="section-title">Expected sequence</div>
+    <ul class="sequence">${l.chronological.length?l.chronological.map(x=>`<li><time>${x.time}</time>${escapeHtml(x.race)} leader <span style="color:#7a878c">(km ${x.km.toFixed(1)})</span></li>`).join(''):'<li>No leader sequence available.</li>'}</ul>
+    <div class="footnote">${escapeHtml(D.event.note)}<br><br>Race starts: Marathon ${D.event.starts.Marathon}, Half ${D.event.starts['Half Marathon']}, 10 km ${D.event.starts['10 km']}, 6 km ${D.event.starts['6 km']}.</div>`;
+  detail.classList.add('open');history.replaceState(null,'','#'+id);document.getElementById('copyLink').onclick=()=>copyLink(id);
+}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function copyLink(id){const url=location.href.split('#')[0]+'#'+id;navigator.clipboard?.writeText(url).then(()=>toast('Location link copied')).catch(()=>prompt('Copy this link',url));}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function buildList(){const box=document.getElementById('locationList');box.innerHTML=D.locations.map(l=>`<article class="location-card" data-id="${l.id}"><h3>${escapeHtml(l.photographer||l.name)}</h3>${l.photographer?`<div style="font-size:12px;color:#5c6970;margin-bottom:5px">${escapeHtml(l.name)}</div>`:''}<span class="mini-time">Be there ${escapeHtml(l.beThereBy)}</span><p class="mini-comment">${escapeHtml(l.comment)}</p></article>`).join('');box.querySelectorAll('.location-card').forEach(c=>c.onclick=()=>{listDrawer.classList.remove('open');openLocation(c.dataset.id,true)});}
+function showUser(lat,lon){if(!userMarker){const el=document.createElement('div');el.style.cssText='position:absolute;width:18px;height:18px;border-radius:50%;background:#147efb;border:4px solid white;box-shadow:0 1px 8px #0008;transform:translate(-50%,-50%);z-index:9';markerLayer.appendChild(el);userMarker={lat,lon,el};}else{userMarker.lat=lat;userMarker.lon=lon}center={lat,lon};if(zoom<15)zoom=15;render();toast('Showing your location')}
+
+map.addEventListener('pointerdown',e=>{if(e.target.closest('.marker')||e.target.closest('.map-controls'))return;drag={x:e.clientX,y:e.clientY};tileDragX=tileDragY=0;map.setPointerCapture(e.pointerId)});map.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};tileDragX+=dx;tileDragY+=dy;tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;centerFromScreenShift(dx,dy);render(false)});const endDrag=()=>{if(!drag)return;drag=null;render(true)};map.addEventListener('pointerup',endDrag);map.addEventListener('pointercancel',endDrag);
+map.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=Math.max(11,Math.min(18,zoom+(e.deltaY<0?1:-1)));if(old!==zoom)render()},{passive:false});
+document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(18,zoom+1);render()};document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(11,zoom-1);render()};document.getElementById('fitBtn').onclick=fitAll;document.getElementById('locateBtn').onclick=()=>{if(!navigator.geolocation)return toast('Location is not available on this device');navigator.geolocation.getCurrentPosition(p=>showUser(p.coords.latitude,p.coords.longitude),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000})};
+document.getElementById('locationsBtn').onclick=()=>listDrawer.classList.add('open');document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).classList.remove('open'));
+window.addEventListener('resize',render);window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(D.locations.some(x=>x.id===id))openLocation(id,true)});
+buildList();fitAll();const hash=location.hash.slice(1);if(hash&&D.locations.some(x=>x.id===hash))openLocation(hash,true);
+})();
+</script>
+</body>
+</html>
