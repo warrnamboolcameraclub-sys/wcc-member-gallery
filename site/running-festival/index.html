@@ -198,7 +198,7 @@ main{position:relative;min-height:0;overflow:hidden}
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.5 · Cross-platform</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.6 · Cross-platform</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -343,7 +343,7 @@ function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!
   const directions=`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}`;
   detailBody.innerHTML=`
     <h3 class="place">${escapeHtml(l.name)}</h3>${photographer}
-    ${(()=>{const g=locationGroupFor(l.id);if(g.length<2)return '';return `<div class="group-tabs">${g.map((x,i)=>`<button type="button" class="group-tab ${x.id===l.id?'active':''}" onclick="openLocation('${x.id}',true)">${i+1} of ${g.length}</button>`).join('')}</div>`})()}
+    ${(()=>{const g=locationGroupFor(l.id);if(g.length<2)return '';return `<div class="group-tabs">${g.map((x,i)=>`<button type="button" class="group-tab ${x.id===l.id?'active':''}" data-group-target="${x.id}">${i+1} of ${g.length}</button>`).join('')}</div>`})()}
     <div class="be-there"><strong>BE THERE BY ${escapeHtml(l.beThereBy||'')}</strong><p>${escapeHtml(l.comment)}</p></div>
     <div class="actions"><a class="action primary" target="_blank" rel="noopener" href="${directions}">Directions</a><button class="action" id="copyLink">Copy this location link</button></div>
     ${l.movement&&l.movement.length?`<div class="section-title">Movement plan</div>${l.movement.map(m=>`<div class="movement"><strong>MOVE TO ${escapeHtml(m.name)}</strong><p><b>Leave by ${escapeHtml(m.leaveBy)}</b> · Be there by ${escapeHtml(m.arriveBy)}</p><p>${escapeHtml(m.note)}</p><p><a class="action" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}">Directions to next position</a></p></div>`).join('')}`:''}
@@ -352,7 +352,16 @@ function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!
     <div class="section-title">Expected sequence</div>
     <ul class="sequence">${l.chronological.length?l.chronological.map(x=>`<li><time>${x.time}</time>${escapeHtml(x.race)} leader <span style="color:#7a878c">(km ${x.km.toFixed(1)})</span></li>`).join(''):'<li>No leader sequence available.</li>'}</ul>
     `;
-  detail.classList.add('open');if(window.matchMedia('(max-width:720px)').matches)document.body.classList.add('instructions-open');history.replaceState(null,'','#'+id);document.getElementById('copyLink').onclick=()=>copyLink(id);
+  detail.classList.add('open');
+  if(window.matchMedia('(max-width:720px)').matches)document.body.classList.add('instructions-open');
+  history.replaceState(null,'','#'+id);
+  document.getElementById('copyLink').onclick=()=>copyLink(id);
+  detailBody.querySelectorAll('[data-group-target]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const target=btn.getAttribute('data-group-target');
+      if(target&&target!==id)openLocation(target,true);
+    });
+  });
 }
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function copyLink(id){const url=location.href.split('#')[0]+'#'+id;navigator.clipboard?.writeText(url).then(()=>toast('Location link copied')).catch(()=>prompt('Copy this link',url));}
