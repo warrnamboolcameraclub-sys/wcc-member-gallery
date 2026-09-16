@@ -16,7 +16,7 @@ button,a{font:inherit}button{cursor:pointer}
 #app{height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
 header{background:var(--teal);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:40;box-shadow:0 2px 7px rgba(0,0,0,.2)}
 header .title{min-width:0;flex:1}header h1{font-size:18px;line-height:1.15;margin:0;font-weight:750}header p{font-size:12px;margin:3px 0 0;opacity:.86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.header-btn{border:1px solid rgba(255,255,255,.55);background:#fff;color:var(--teal);border-radius:9px;padding:8px 10px;font-weight:800}.short-label{display:none}
+.header-btn{border:1px solid rgba(255,255,255,.55);background:#fff;color:var(--teal);border-radius:9px;padding:8px 10px;font-weight:800}.short-label{display:none}.desktop-hint{display:none}
 main{position:relative;min-height:0;overflow:hidden}
 #map{position:absolute;inset:0;background:linear-gradient(155deg,#edf4f6,#dce8ec);touch-action:none;overflow:hidden}
 #tiles{position:absolute;inset:0;overflow:hidden}.tile{position:absolute;width:256px;height:256px;user-select:none;pointer-events:none}.tile.failed{display:none}
@@ -170,6 +170,120 @@ main{position:relative;min-height:0;overflow:hidden}
 
   body.instructions-open #map{visibility:hidden}
 }
+
+/* Desktop layout: persistent location list + large map + optional detail panel */
+@media(min-width:900px){
+  .mobile-hint{display:none}.desktop-hint{display:inline}
+  header{
+    min-height:62px;
+    padding:10px 18px;
+  }
+  header h1{font-size:20px}
+  header p{font-size:12px}
+  #locationsBtn{display:none}
+
+  main{background:#dfe9ec}
+
+  #listDrawer{
+    display:flex;
+    flex-direction:column;
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:360px;
+    transform:none!important;
+    border-radius:0;
+    box-shadow:4px 0 16px rgba(0,0,0,.12);
+    overflow:hidden;
+    z-index:32;
+  }
+  #listDrawer .drawer-head{
+    position:relative;
+    flex:0 0 auto;
+    padding:12px 14px;
+    background:#fff;
+  }
+  #listDrawer .close{display:none}
+  #listDrawer .instruction-intro{
+    flex:0 0 auto;
+    padding:11px 14px;
+  }
+  #locationList{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+
+  #map{
+    left:360px;
+    right:0;
+    cursor:grab;
+  }
+  #map:active{cursor:grabbing}
+
+  .map-controls{
+    top:14px;
+    left:14px;
+    display:flex;
+    gap:8px;
+  }
+  .map-controls button{
+    width:44px;height:44px;
+    font-size:17px;
+  }
+  .legend{
+    right:14px;
+    top:14px;
+    font-size:12px;
+  }
+  #instructionHint{
+    top:14px!important;
+    font-size:12px!important;
+  }
+
+  #detail{
+    position:absolute;
+    top:0;right:0;bottom:0;
+    width:430px;
+    max-height:none;
+    border-radius:0;
+    box-shadow:-4px 0 18px rgba(0,0,0,.16);
+    overflow:hidden;
+    z-index:36;
+  }
+  #detail.open{display:flex;flex-direction:column}
+  #detail .drawer-head{
+    position:relative;
+    flex:0 0 auto;
+    background:#fff;
+  }
+  #detail .detail-body{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding:16px;
+  }
+  #detail .mobile-back{display:none!important}
+
+  .location-card{
+    padding:13px 14px;
+  }
+  .location-card h3{font-size:15px}
+  .location-card:hover{background:#edf5f7}
+  .location-card:focus-within{background:#edf5f7}
+
+  .marker-label{
+    display:block;
+    opacity:.86;
+  }
+  .marker.selected .marker-label{opacity:1}
+}
+
+/* On wide desktop screens, keep the map visible beside the detail panel. */
+@media(min-width:1250px){
+  body.detail-open #map{right:430px}
+}
+
 @media(min-width:1000px){#detail{right:18px;bottom:18px}.marker-label{display:block;opacity:.82}.marker.selected .marker-label{opacity:1}}
 
 .marker-group{position:absolute;transform:translate(-50%,-100%);z-index:12}
@@ -199,7 +313,7 @@ main{position:relative;min-height:0;overflow:hidden}
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.1 · Mobile Gestures</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.2 · Desktop + Mobile</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -214,7 +328,7 @@ main{position:relative;min-height:0;overflow:hidden}
       <button id="locateBtn" title="Show my location">◎</button>
     </div>
     <div id="instructionHint" style="position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:23;background:rgba(255,255,255,.96);border:1px solid #c7d5da;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:750;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap">
-      Tap a 📷 marker for times &amp; instructions
+      <span class="mobile-hint">Tap a 📷 marker for times &amp; instructions</span><span class="desktop-hint">Click a 📷 marker for times &amp; instructions · drag to pan · wheel to zoom</span>
     </div>
     <div class="legend">
       <div class="leg"><span class="sw" style="border-color:#2563eb"></span>Half / Marathon</div>
@@ -354,7 +468,7 @@ function openLocation(id,move=false){const l=D.locations.find(x=>x.id===id);if(!
     <div class="section-title">Expected sequence</div>
     <ul class="sequence">${l.chronological.length?l.chronological.map(x=>`<li><time>${x.time}</time>${escapeHtml(x.race)} leader <span style="color:#7a878c">(km ${x.km.toFixed(1)})</span></li>`).join(''):'<li>No leader sequence available.</li>'}</ul>
     `;
-  detail.classList.add('open');
+  detail.classList.add('open');document.body.classList.add('detail-open');
   if(window.matchMedia('(max-width:720px)').matches)document.body.classList.add('instructions-open');
   history.replaceState(null,'','#'+id);
   document.getElementById('copyLink').onclick=()=>copyLink(id);
@@ -520,7 +634,7 @@ map.addEventListener('dblclick',e=>{
 });
 
 document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(18,zoom+1);render()};document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(11,zoom-1);render()};document.getElementById('fitBtn').onclick=fitAll;document.getElementById('locateBtn').onclick=()=>{if(!navigator.geolocation)return toast('Location is not available on this device');navigator.geolocation.getCurrentPosition(p=>showUser(p.coords.latitude,p.coords.longitude),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000})};
-document.getElementById('locationsBtn').onclick=()=>{listDrawer.classList.add('open');document.body.classList.add('instructions-open')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.close).classList.remove('open');if(!listDrawer.classList.contains('open')&&!detail.classList.contains('open'))document.body.classList.remove('instructions-open')});const backBtn=document.getElementById('backToLocations');if(backBtn)backBtn.onclick=()=>{detail.classList.remove('open');listDrawer.classList.add('open');document.body.classList.add('instructions-open')};
+document.getElementById('locationsBtn').onclick=()=>{listDrawer.classList.add('open');document.body.classList.add('instructions-open')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{const target=document.getElementById(b.dataset.close);target.classList.remove('open');if(b.dataset.close==='detail')document.body.classList.remove('detail-open');if(!listDrawer.classList.contains('open')&&!detail.classList.contains('open'))document.body.classList.remove('instructions-open')});const backBtn=document.getElementById('backToLocations');if(backBtn)backBtn.onclick=()=>{detail.classList.remove('open');document.body.classList.remove('detail-open');listDrawer.classList.add('open');document.body.classList.add('instructions-open')};
 
 
 let resizeTimer=null;
