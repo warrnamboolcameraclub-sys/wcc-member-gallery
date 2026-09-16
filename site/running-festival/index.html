@@ -199,7 +199,7 @@ main{position:relative;min-height:0;overflow:hidden}
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V4.9 · Cross-platform</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.0 · Touch Zoom</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -249,6 +249,39 @@ const map=document.getElementById('map'), tiles=document.getElementById('tiles')
 const detail=document.getElementById('detail'), detailBody=document.getElementById('detailBody'), listDrawer=document.getElementById('listDrawer');
 const raceColors={'Marathon':'#2563eb','Half Marathon':'#7c3aed','10 km':'#f97316','6 km':'#16a34a'};
 let W=1,H=1,zoom=14,center={lat:-38.396,lon:142.490},drag=null,selected=null,userMarker=null,tileDragX=0,tileDragY=0;
+let activePointers=new Map();
+let gestureStartDistance=null;
+let gestureStartZoom=null;
+let lastTapTime=0;
+
+function clampZoom(z){return Math.max(11,Math.min(19,z))}
+function unprojectScreen(px,py,z,c){
+  const wc=world(c.lat,c.lon,z);
+  const wx=wc.x+(px-W/2), wy=wc.y+(py-H/2);
+  return unworld(wx,wy,z);
+}
+function setZoomAroundPoint(newZoom,clientX,clientY){
+  newZoom=clampZoom(newZoom);
+  if(Math.abs(newZoom-zoom)<0.001)return;
+  const rect=map.getBoundingClientRect();
+  const px=clientX-rect.left, py=clientY-rect.top;
+  const before=unprojectScreen(px,py,zoom,center);
+  zoom=newZoom;
+  const after=unprojectScreen(px,py,zoom,center);
+  center.lat+=before.lat-after.lat;
+  center.lon+=before.lon-after.lon;
+  render();
+}
+function pointerDistance(){
+  const pts=[...activePointers.values()];
+  if(pts.length<2)return 0;
+  return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+}
+function pointerMidpoint(){
+  const pts=[...activePointers.values()];
+  return {x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2};
+}
+
 
 function world(lat,lon,z){const scale=256*Math.pow(2,z); const x=(lon+180)/360*scale; const s=Math.sin(lat*Math.PI/180); const y=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*scale; return{x,y};}
 function unworld(x,y,z){const scale=256*Math.pow(2,z);const lon=x/scale*360-180;const n=Math.PI-2*Math.PI*y/scale;const lat=180/Math.PI*Math.atan(.5*(Math.exp(n)-Math.exp(-n)));return{lat,lon};}
@@ -375,6 +408,59 @@ map.addEventListener('pointerdown',e=>{if(e.target.closest('.marker')||e.target.
 map.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=Math.max(11,Math.min(18,zoom+(e.deltaY<0?1:-1)));if(old!==zoom)render()},{passive:false});
 document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(18,zoom+1);render()};document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(11,zoom-1);render()};document.getElementById('fitBtn').onclick=fitAll;document.getElementById('locateBtn').onclick=()=>{if(!navigator.geolocation)return toast('Location is not available on this device');navigator.geolocation.getCurrentPosition(p=>showUser(p.coords.latitude,p.coords.longitude),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000})};
 document.getElementById('locationsBtn').onclick=()=>{listDrawer.classList.add('open');document.body.classList.add('instructions-open')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.close).classList.remove('open');if(!listDrawer.classList.contains('open')&&!detail.classList.contains('open'))document.body.classList.remove('instructions-open')});const backBtn=document.getElementById('backToLocations');if(backBtn)backBtn.onclick=()=>{detail.classList.remove('open');listDrawer.classList.add('open');document.body.classList.add('instructions-open')};
+
+map.addEventListener('wheel',e=>{
+  e.preventDefault();
+  setZoomAroundPoint(zoom+(e.deltaY<0?1:-1),e.clientX,e.clientY);
+},{passive:false});
+
+map.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  map.setPointerCapture?.(e.pointerId);
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activePointers.size===2){
+    gestureStartDistance=pointerDistance();
+    gestureStartZoom=zoom;
+  }
+});
+
+map.addEventListener('pointermove',e=>{
+  if(!activePointers.has(e.pointerId))return;
+  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(activePointers.size===2&&gestureStartDistance){
+    const ratio=pointerDistance()/gestureStartDistance;
+    const mid=pointerMidpoint();
+    setZoomAroundPoint(gestureStartZoom+Math.log2(ratio),mid.x,mid.y);
+  }
+});
+
+function endPointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size<2){
+    gestureStartDistance=null;
+    gestureStartZoom=null;
+  }
+}
+map.addEventListener('pointerup',endPointer);
+map.addEventListener('pointercancel',endPointer);
+
+map.addEventListener('touchend',e=>{
+  if(e.changedTouches.length!==1)return;
+  const now=Date.now();
+  if(now-lastTapTime<320){
+    const t=e.changedTouches[0];
+    setZoomAroundPoint(zoom+1,t.clientX,t.clientY);
+    lastTapTime=0;
+  }else{
+    lastTapTime=now;
+  }
+},{passive:true});
+
+map.addEventListener('dblclick',e=>{
+  e.preventDefault();
+  setZoomAroundPoint(zoom+1,e.clientX,e.clientY);
+});
+
 let resizeTimer=null;
 function safeResize(){
   clearTimeout(resizeTimer);
