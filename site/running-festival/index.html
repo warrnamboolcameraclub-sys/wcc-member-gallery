@@ -199,7 +199,7 @@ main{position:relative;min-height:0;overflow:hidden}
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.0 · Touch Zoom</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.1 · Mobile Gestures</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -249,38 +249,6 @@ const map=document.getElementById('map'), tiles=document.getElementById('tiles')
 const detail=document.getElementById('detail'), detailBody=document.getElementById('detailBody'), listDrawer=document.getElementById('listDrawer');
 const raceColors={'Marathon':'#2563eb','Half Marathon':'#7c3aed','10 km':'#f97316','6 km':'#16a34a'};
 let W=1,H=1,zoom=14,center={lat:-38.396,lon:142.490},drag=null,selected=null,userMarker=null,tileDragX=0,tileDragY=0;
-let activePointers=new Map();
-let gestureStartDistance=null;
-let gestureStartZoom=null;
-let lastTapTime=0;
-
-function clampZoom(z){return Math.max(11,Math.min(19,z))}
-function unprojectScreen(px,py,z,c){
-  const wc=world(c.lat,c.lon,z);
-  const wx=wc.x+(px-W/2), wy=wc.y+(py-H/2);
-  return unworld(wx,wy,z);
-}
-function setZoomAroundPoint(newZoom,clientX,clientY){
-  newZoom=clampZoom(newZoom);
-  if(Math.abs(newZoom-zoom)<0.001)return;
-  const rect=map.getBoundingClientRect();
-  const px=clientX-rect.left, py=clientY-rect.top;
-  const before=unprojectScreen(px,py,zoom,center);
-  zoom=newZoom;
-  const after=unprojectScreen(px,py,zoom,center);
-  center.lat+=before.lat-after.lat;
-  center.lon+=before.lon-after.lon;
-  render();
-}
-function pointerDistance(){
-  const pts=[...activePointers.values()];
-  if(pts.length<2)return 0;
-  return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
-}
-function pointerMidpoint(){
-  const pts=[...activePointers.values()];
-  return {x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2};
-}
 
 
 function world(lat,lon,z){const scale=256*Math.pow(2,z); const x=(lon+180)/360*scale; const s=Math.sin(lat*Math.PI/180); const y=(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*scale; return{x,y};}
@@ -404,62 +372,156 @@ function buildList(){
 }
 function showUser(lat,lon){if(!userMarker){const el=document.createElement('div');el.style.cssText='position:absolute;width:18px;height:18px;border-radius:50%;background:#147efb;border:4px solid white;box-shadow:0 1px 8px #0008;transform:translate(-50%,-50%);z-index:9';markerLayer.appendChild(el);userMarker={lat,lon,el};}else{userMarker.lat=lat;userMarker.lon=lon}center={lat,lon};if(zoom<15)zoom=15;render();toast('Showing your location')}
 
-map.addEventListener('pointerdown',e=>{if(e.target.closest('.marker')||e.target.closest('.map-controls'))return;drag={x:e.clientX,y:e.clientY};tileDragX=tileDragY=0;map.setPointerCapture(e.pointerId)});map.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag={x:e.clientX,y:e.clientY};tileDragX+=dx;tileDragY+=dy;tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;centerFromScreenShift(dx,dy);render(false)});const endDrag=()=>{if(!drag)return;drag=null;render(true)};map.addEventListener('pointerup',endDrag);map.addEventListener('pointercancel',endDrag);
-map.addEventListener('wheel',e=>{e.preventDefault();const old=zoom;zoom=Math.max(11,Math.min(18,zoom+(e.deltaY<0?1:-1)));if(old!==zoom)render()},{passive:false});
+// Cross-platform map interaction
+let touchMode=null;
+let touchStartDistance=0;
+let touchLastCenter=null;
+let lastTouchTap=0;
+
+function zoomOneStep(direction, clientX, clientY){
+  const old=zoom;
+  zoom=Math.max(11,Math.min(18,zoom+direction));
+  if(old===zoom)return;
+
+  // Keep the tapped/pinched point roughly under the user's fingers.
+  if(clientX!=null&&clientY!=null){
+    const rect=map.getBoundingClientRect();
+    const px=clientX-rect.left, py=clientY-rect.top;
+    const before=unworld(
+      world(center.lat,center.lon,old).x + (px-W/2),
+      world(center.lat,center.lon,old).y + (py-H/2),
+      old
+    );
+    const after=unworld(
+      world(center.lat,center.lon,zoom).x + (px-W/2),
+      world(center.lat,center.lon,zoom).y + (py-H/2),
+      zoom
+    );
+    center.lat+=before.lat-after.lat;
+    center.lon+=before.lon-after.lon;
+  }
+  render();
+}
+
+// Mouse / desktop drag
+map.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse')return;
+  if(e.button!==0||e.target.closest('.marker')||e.target.closest('.map-controls'))return;
+  drag={x:e.clientX,y:e.clientY};
+  tileDragX=tileDragY=0;
+  map.setPointerCapture?.(e.pointerId);
+});
+map.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse'||!drag)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  drag={x:e.clientX,y:e.clientY};
+  tileDragX+=dx;tileDragY+=dy;
+  tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;
+  centerFromScreenShift(dx,dy);
+  render(false);
+});
+const endMouseDrag=()=>{
+  if(!drag)return;
+  drag=null;
+  render(true);
+};
+map.addEventListener('pointerup',endMouseDrag);
+map.addEventListener('pointercancel',endMouseDrag);
+
+// Touch: one finger pans, two fingers pinch.
+map.addEventListener('touchstart',e=>{
+  if(e.target.closest('.marker')||e.target.closest('.map-controls'))return;
+
+  if(e.touches.length===1){
+    const t=e.touches[0];
+    touchMode='pan';
+    touchLastCenter={x:t.clientX,y:t.clientY};
+    tileDragX=tileDragY=0;
+  }else if(e.touches.length===2){
+    e.preventDefault();
+    touchMode='pinch';
+    const a=e.touches[0],b=e.touches[1];
+    touchStartDistance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    touchLastCenter={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+  }
+},{passive:false});
+
+map.addEventListener('touchmove',e=>{
+  if(touchMode==='pan'&&e.touches.length===1){
+    e.preventDefault();
+    const t=e.touches[0];
+    const dx=t.clientX-touchLastCenter.x,dy=t.clientY-touchLastCenter.y;
+    touchLastCenter={x:t.clientX,y:t.clientY};
+    tileDragX+=dx;tileDragY+=dy;
+    tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;
+    centerFromScreenShift(dx,dy);
+    render(false);
+  }else if(e.touches.length===2){
+    e.preventDefault();
+    touchMode='pinch';
+    const a=e.touches[0],b=e.touches[1];
+    const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const mid={x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+
+    // Step zoom when the pinch changes by ~20%, then reset the reference distance.
+    if(touchStartDistance){
+      const ratio=dist/touchStartDistance;
+      if(ratio>1.20){
+        zoomOneStep(1,mid.x,mid.y);
+        touchStartDistance=dist;
+      }else if(ratio<0.83){
+        zoomOneStep(-1,mid.x,mid.y);
+        touchStartDistance=dist;
+      }
+    }
+    touchLastCenter=mid;
+  }
+},{passive:false});
+
+map.addEventListener('touchend',e=>{
+  if(e.touches.length===0){
+    if(touchMode==='pan'){
+      render(true);
+      const now=Date.now();
+      if(now-lastTouchTap<320&&e.changedTouches.length===1){
+        const t=e.changedTouches[0];
+        zoomOneStep(1,t.clientX,t.clientY);
+        lastTouchTap=0;
+      }else{
+        lastTouchTap=now;
+      }
+    }
+    touchMode=null;
+    touchStartDistance=0;
+    touchLastCenter=null;
+  }else if(e.touches.length===1){
+    const t=e.touches[0];
+    touchMode='pan';
+    touchLastCenter={x:t.clientX,y:t.clientY};
+    touchStartDistance=0;
+  }
+},{passive:false});
+
+map.addEventListener('touchcancel',()=>{
+  touchMode=null;
+  touchStartDistance=0;
+  touchLastCenter=null;
+  render(true);
+},{passive:false});
+
+// Wheel/trackpad and desktop double-click
+map.addEventListener('wheel',e=>{
+  e.preventDefault();
+  zoomOneStep(e.deltaY<0?1:-1,e.clientX,e.clientY);
+},{passive:false});
+map.addEventListener('dblclick',e=>{
+  e.preventDefault();
+  zoomOneStep(1,e.clientX,e.clientY);
+});
+
 document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(18,zoom+1);render()};document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(11,zoom-1);render()};document.getElementById('fitBtn').onclick=fitAll;document.getElementById('locateBtn').onclick=()=>{if(!navigator.geolocation)return toast('Location is not available on this device');navigator.geolocation.getCurrentPosition(p=>showUser(p.coords.latitude,p.coords.longitude),()=>toast('Could not get your location'),{enableHighAccuracy:true,timeout:10000})};
 document.getElementById('locationsBtn').onclick=()=>{listDrawer.classList.add('open');document.body.classList.add('instructions-open')};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.close).classList.remove('open');if(!listDrawer.classList.contains('open')&&!detail.classList.contains('open'))document.body.classList.remove('instructions-open')});const backBtn=document.getElementById('backToLocations');if(backBtn)backBtn.onclick=()=>{detail.classList.remove('open');listDrawer.classList.add('open');document.body.classList.add('instructions-open')};
 
-map.addEventListener('wheel',e=>{
-  e.preventDefault();
-  setZoomAroundPoint(zoom+(e.deltaY<0?1:-1),e.clientX,e.clientY);
-},{passive:false});
-
-map.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse'&&e.button!==0)return;
-  map.setPointerCapture?.(e.pointerId);
-  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(activePointers.size===2){
-    gestureStartDistance=pointerDistance();
-    gestureStartZoom=zoom;
-  }
-});
-
-map.addEventListener('pointermove',e=>{
-  if(!activePointers.has(e.pointerId))return;
-  activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(activePointers.size===2&&gestureStartDistance){
-    const ratio=pointerDistance()/gestureStartDistance;
-    const mid=pointerMidpoint();
-    setZoomAroundPoint(gestureStartZoom+Math.log2(ratio),mid.x,mid.y);
-  }
-});
-
-function endPointer(e){
-  activePointers.delete(e.pointerId);
-  if(activePointers.size<2){
-    gestureStartDistance=null;
-    gestureStartZoom=null;
-  }
-}
-map.addEventListener('pointerup',endPointer);
-map.addEventListener('pointercancel',endPointer);
-
-map.addEventListener('touchend',e=>{
-  if(e.changedTouches.length!==1)return;
-  const now=Date.now();
-  if(now-lastTapTime<320){
-    const t=e.changedTouches[0];
-    setZoomAroundPoint(zoom+1,t.clientX,t.clientY);
-    lastTapTime=0;
-  }else{
-    lastTapTime=now;
-  }
-},{passive:true});
-
-map.addEventListener('dblclick',e=>{
-  e.preventDefault();
-  setZoomAroundPoint(zoom+1,e.clientX,e.clientY);
-});
 
 let resizeTimer=null;
 function safeResize(){
