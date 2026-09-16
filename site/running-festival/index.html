@@ -313,7 +313,7 @@ main{position:relative;min-height:0;overflow:hidden}
 <body>
 <div id="app">
 <header>
-  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.2 · Desktop + Mobile</p></div>
+  <div class="title"><h1>WRF 2026 Photography Map</h1><p>Warrnambool Camera Club · Sunday 20 September · Assignment V5.3 · Free Pan</p></div>
   <button class="header-btn" id="locationsBtn"><span class="full-label">Photographer Instructions</span><span class="short-label">Instructions</span></button>
 </header>
 <main>
@@ -529,10 +529,8 @@ map.addEventListener('pointermove',e=>{
   if(e.pointerType!=='mouse'||!drag)return;
   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
   drag={x:e.clientX,y:e.clientY};
-  tileDragX+=dx;tileDragY+=dy;
-  tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;
   centerFromScreenShift(dx,dy);
-  render(false);
+  render(true);
 });
 const endMouseDrag=()=>{
   if(!drag)return;
@@ -566,10 +564,8 @@ map.addEventListener('touchmove',e=>{
     const t=e.touches[0];
     const dx=t.clientX-touchLastCenter.x,dy=t.clientY-touchLastCenter.y;
     touchLastCenter={x:t.clientX,y:t.clientY};
-    tileDragX+=dx;tileDragY+=dy;
-    tiles.style.transform=`translate(${tileDragX}px,${tileDragY}px)`;
     centerFromScreenShift(dx,dy);
-    render(false);
+    render(true);
   }else if(e.touches.length===2){
     e.preventDefault();
     touchMode='pinch';
