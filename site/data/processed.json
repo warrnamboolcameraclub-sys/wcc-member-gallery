@@ -131,7 +131,7 @@
       "processedAt": "2026-09-11T07:20:23+00:00"
     }
   },
-  "lastRun": "2026-10-11T06:06:01+00:00",
+  "lastRun": "2026-10-12T06:15:43+00:00",
   "mode": "monthly",
   "listingDiagnostics": [
     {
@@ -139,7 +139,7 @@
       "status": 200,
       "finalUrl": "https://warrnambool.myphotoclub.com.au/",
       "htmlBodyParsed": true,
-      "checkedAt": "2026-10-11T06:06:01+00:00"
+      "checkedAt": "2026-10-12T06:15:43+00:00"
     }
   ]
 }
